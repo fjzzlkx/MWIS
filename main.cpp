@@ -7,14 +7,25 @@
 #include <vector>
 
 using namespace std;
-#define V_NUMBER 20
-#define V_number 20
+#define V_NUMBER 50
+#define V_number 50
 
 typedef vector<vector<vector<int> > > vvvi;
 typedef vector<vector<int> > vvi;
 typedef vector<int> vi;
+typedef vector<unsigned int> vui;
+//判断一个向量是否能满足指定干扰图的要求
+bool judgment_Vector(vector<int>  a, int V_graph[V_NUMBER][V_NUMBER]){
+    for(unsigned int i = 0; i < a.size(); i++){
+        for(unsigned int j = i; j < a.size(); j++){
+            if(V_graph[a[i]][a[j]] == 1) return false;
+        }
+    }
+    return true;
+}
 //求集合的所有子集
-vvi get_subsets(vector<int>  a, int n){ //O(n2^n)
+vvi get_subsets(vector<int>  a){
+    int n = a.size();
     vvi subsets;
     int max = 1<<n;
     for(int i=0; i<max; ++i){
@@ -32,7 +43,30 @@ vvi get_subsets(vector<int>  a, int n){ //O(n2^n)
     }
     return subsets;
 }
+//求所有满足协议内容的所有子集
+vvi get_subsets_protocol(vector<int>  a, int V_graph[V_NUMBER][V_NUMBER]){
+    vvi subsets;
+    int n = a.size();
+    int max = 1<<n;
+    for(int i=0; i<max; ++i){
+        vi subset;
+        int idx = 0;
+        int j = i;
+        while(j > 0){
+            if(j&1){
+                subset.push_back(a[idx]);
+            }
+            j >>= 1;
+            ++idx;
+        }
+        if(judgment_Vector(subset,V_graph)){
+            subsets.push_back(subset);
+        }
+    }
+    return subsets;
+}
 
+//打印输出这个二维的向量
 void print_subsets(vvi subsets){
     for(unsigned i=0; i<subsets.size(); ++i){
         vi subset = subsets[i];
@@ -42,13 +76,31 @@ void print_subsets(vvi subsets){
         cout<<endl;
     }
 }
-
+//从二维向量获取三维向量
 vvvi get_subsets_3(vvi subsets){ //O(n2^n)
     vvvi subsets_3;
     cout << "subsets.size() " << subsets.size() << endl;
     for(unsigned int i=0;i<subsets.size();i++){
         subsets_3.push_back(vector<vector<int> >());
-        vvi temp2  = get_subsets(subsets[i],subsets[i].size());
+        // vvi temp2  = get_subsets(subsets[i],subsets[i].size());
+        vvi temp2  = get_subsets(subsets[i]);
+        for(unsigned int m=0;m<temp2.size();m++){
+            subsets_3[i].push_back(vector<int>());
+            for(unsigned int n=0;n<temp2[m].size();n++){
+                // cout << temp2[m][n] << "--";
+                subsets_3[i][m].push_back(temp2[m][n]);
+            }
+        }
+    }
+    return subsets_3;
+}
+//获取满足协议内容的三维数组
+vvvi get_subsets_3_protocol(vvi subsets, int V_graph[V_NUMBER][V_NUMBER]){
+    vvvi subsets_3;
+    cout << "subsets.size() " << subsets.size() << endl;
+    for(unsigned int i=0;i<subsets.size();i++){
+        subsets_3.push_back(vector<vector<int> >());
+        vvi temp2  = get_subsets_protocol(subsets[i],V_graph);
         for(unsigned int m=0;m<temp2.size();m++){
             subsets_3[i].push_back(vector<int>());
             for(unsigned int n=0;n<temp2[m].size();n++){
@@ -60,6 +112,7 @@ vvvi get_subsets_3(vvi subsets){ //O(n2^n)
     return subsets_3;
 }
 
+//打印三维向量的内容
 void print_subsets_3(vvvi vec){
     for(unsigned int i=0;i<vec.size();i++){
         for(unsigned int j=0;j<vec[i].size();j++){
@@ -73,6 +126,7 @@ void print_subsets_3(vvvi vec){
     }
 }
 
+//获取从数组中获取一个三维的数组来储存该状态
 vvvi get_state_3(vvvi vec_3, vvi vec_2, int V_graph[V_NUMBER][V_NUMBER]){
     vvvi state_3;
     for(unsigned int i=0;i<vec_3.size();i++){
@@ -100,6 +154,75 @@ vvvi get_state_3(vvvi vec_3, vvi vec_2, int V_graph[V_NUMBER][V_NUMBER]){
         }
     }
     return state_3;
+}
+
+//寻找一个数字在向量里面的位置
+ int index_of_num(vi a, int num){
+     int index = -1;
+     for(unsigned i = 0; i < a.size(); i++){
+         if(a[i] == num) {
+             index = i;
+             break;
+         }
+     }
+     return index;
+ }
+
+//组合两个集合的节点
+ vi combination_Node(vi Node_1,vi Node_2){
+     vi Node_combination = Node_1;
+     for(unsigned i = 0; i < Node_2.size(); i++){
+         if(index_of_num(Node_1, Node_2[i]) == -1){
+             Node_combination.push_back(Node_2[i]);
+         }
+     }
+     return Node_combination;
+ }
+//组合两个集合的状态
+vvi combination_vec(vvi Node_state_1, vi Node_1, vvi Node_state_2, vi Node_2){
+    vi Node_combination = Node_1;
+    vi Node_not_repeat;
+    vi Node_repeat;
+    for(unsigned i = 0; i < Node_2.size(); i++){
+        if(index_of_num(Node_1, Node_2[i]) == -1){
+            Node_combination.push_back(Node_2[i]);
+            Node_not_repeat.push_back(Node_2[i]);
+        } else {
+            Node_repeat.push_back(Node_2[i]);
+        }
+    }
+    unsigned num_of_repeat = Node_repeat.size();
+    unsigned Node_repeat_index[num_of_repeat][2];
+    vvi state_combination;
+    for(unsigned i = 0; i < num_of_repeat; i++){
+        Node_repeat_index[i][0] = index_of_num(Node_1,Node_repeat[i]);
+        Node_repeat_index[i][1] = index_of_num(Node_2,Node_repeat[i]);
+    }
+    vui not_repeat_index;
+    for(unsigned i = 0; i < Node_not_repeat.size(); i++){
+        unsigned temp_index = (unsigned)index_of_num(Node_2,Node_not_repeat[i]);
+        not_repeat_index.push_back(temp_index);
+    }
+
+    state_combination.push_back(vector<int>());
+    for(unsigned i = 0; i < Node_state_1.size(); i++){
+        for(unsigned j = 0; j < Node_state_2.size(); j++){
+            bool compatible = true;
+            for(unsigned m = 0; m < num_of_repeat; m++){
+                bool temp = Node_state_1[i][Node_repeat_index[m][0]] == Node_state_2[j][Node_repeat_index[m][1]];
+                //cout << temp << "------" << endl;
+                compatible = compatible && temp;
+            }
+            if(compatible == true){
+                vi state = Node_state_1[i];
+                for(unsigned n = 0; n < not_repeat_index.size(); n++){
+                    state.push_back(Node_state_2[j][not_repeat_index[n]]);
+                }
+                state_combination.push_back(state);
+            }
+        }
+    }
+    return state_combination;
 }
 
 
@@ -167,33 +290,44 @@ int main(void){
         }
         cout << "over" << endl;
     }
-    //打印这个矩阵的内容
-    // for (int i = 0; i < V_number; i++){
-    //     for(unsigned j = 0; j < v_neighbor[i].size() ; j++){
-    //         cout << v_neighbor[i][j] << " ";
-    //     }
-    //     cout << "ddd " << endl;
-    // }
-    // cout << endl;
-    /*
-     *最初开始广播的生成的每个点和它邻居的全部解
-    */
 
-    //vector< vector <vector<int> > > Q_Solution(V_number,vector<vector<int> >(0,vector<int>()));
-    //vector<vector<int> > v_neighbor(V_number, vector<int>());
-    // for(int i = 0; i < V_number; i++){
-    //     Q_Solution =
-    //     for(unsigned j = 0; j < v_neighbor[i].size() ; j++){
-    //
-    //     }
-    // }
     cout << "v_neighbor" << endl;
     print_subsets(v_neighbor);
     vvvi Q_Solution;
     Q_Solution = get_subsets_3(v_neighbor);
-    print_subsets_3(Q_Solution);
+    // print_subsets_3(Q_Solution);
     vvvi Q_Solution_state = get_state_3(Q_Solution,v_neighbor,V_graph);
-    print_subsets_3(Q_Solution_state);
+    //print_subsets_3(Q_Solution_state);
+
+    cout << "------------------------------------"  << endl;
+    vvvi Q_Solution_protocol;
+    Q_Solution_protocol = get_subsets_3_protocol(v_neighbor,V_graph);
+    print_subsets_3(Q_Solution_protocol);
+    cout << Q_Solution_protocol.size() << "+" << Q_Solution_protocol[0].size() << "+" << Q_Solution_protocol[0][0].size() << endl;
+    cout << "------------------------------------"  << endl;
+    vvvi Q_Solution_protocol_state = get_state_3(Q_Solution_protocol,v_neighbor,V_graph);
+    cout << Q_Solution_protocol_state.size() << "+" << Q_Solution_protocol_state[0].size() << "+" << Q_Solution_protocol_state[0][0].size() << endl;
+    print_subsets_3(Q_Solution_protocol_state);
+
+    cout << "-----------------test_vvi----------------" << endl;
+    //测试combination_Node 和 combination_vec
+    vvi test_vvi = combination_vec(Q_Solution_protocol_state[0],v_neighbor[0],Q_Solution_protocol_state[1],v_neighbor[1]);
+    // print_subsets(test_vvi);
+    print_subsets(Q_Solution_protocol_state[0]);
+    cout << endl;
+    print_subsets(Q_Solution_protocol_state[1]);
+    cout << endl;
+    print_subsets(test_vvi);
+    cout << "-----------------Node----------------" << endl;
+    vi Node0 = combination_Node(v_neighbor[0],v_neighbor[1]);
+    vi Node1 = combination_Node(v_neighbor[1],v_neighbor[1]);
+    vvi Node;
+    Node.push_back(Node0);
+    Node.push_back(Node1);
+    print_subsets(Node);
+
+
+
 
 
 	return 0;
